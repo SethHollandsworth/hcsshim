@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 
@@ -32,12 +33,22 @@ func main() {
 			return err
 		}
 
-		config := &securitypolicy.PolicyConfig{}
+		config := &securitypolicy.InputPolicyConfig{}
 
-		err = toml.Unmarshal(configData, config)
-		if err != nil {
-			return err
+		// decide whether we're parsing toml or json
+		if strings.HasSuffix(*configFile, ".toml") {
+			err = toml.Unmarshal(configData, config)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = json.Unmarshal(configData, config)
+			if err != nil {
+				return err
+			}
 		}
+		// TODO: do a lot of error checking on the input json to make sure it has all the necessary pieces.
+		// make it so it reports all the issues at one time instead of stopping after it finds one issue
 
 		policy, err := func() (*securitypolicy.SecurityPolicy, error) {
 			if config.AllowAll {
@@ -55,9 +66,11 @@ func main() {
 		if err != nil {
 			return err
 		}
+
 		if *outputJSON {
 			fmt.Printf("%s\n", j)
 		}
+
 		b := base64.StdEncoding.EncodeToString(j)
 		fmt.Printf("%s\n", b)
 
@@ -70,14 +83,29 @@ func main() {
 	}
 }
 
-func createPolicyFromConfig(config *securitypolicy.PolicyConfig) (*securitypolicy.SecurityPolicy, error) {
+func createPolicyFromConfig(config *securitypolicy.InputPolicyConfig) (*securitypolicy.SecurityPolicy, error) {
 	// Add default containers to the policy config to get the root hash
 	// and any environment variable rules we might need
-	defaultContainers := helpers.DefaultContainerConfigs()
-	config.Containers = append(config.Containers, defaultContainers...)
-	policyContainers, err := helpers.PolicyContainersFromConfigs(config.Containers)
+	defaultContainers, err := helpers.DefaultContainerConfigs()
 	if err != nil {
 		return nil, err
 	}
+
+	// need to translate the input from policy.json format to the expected json that gets base64 encoded
+	translatedInput, err := helpers.TranslateInputContainers(config.Containers)
+	if err != nil {
+		return nil, err
+	}
+
+	outConfig := securitypolicy.PolicyConfig{
+		Containers: append(translatedInput, defaultContainers...),
+		AllowAll:   config.AllowAll,
+	}
+
+	policyContainers, err := helpers.PolicyContainersFromConfigs(outConfig.Containers)
+	if err != nil {
+		return nil, err
+	}
+
 	return securitypolicy.NewSecurityPolicy(false, policyContainers), nil
 }

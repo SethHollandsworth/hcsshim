@@ -54,6 +54,39 @@ type ContainerConfig struct {
 	AllowElevated   bool            `json:"allow_elevated" toml:"allow_elevated"`
 }
 
+// PolicyConfig contains toml or JSON config for security policy.
+type InputPolicyConfig struct {
+	AllowAll   bool                   `json:"allow_all" toml:"allow_all"`
+	Containers []InputContainerConfig `json:"containers" toml:"container"`
+}
+
+// ContainerConfig contains toml or JSON config for container described
+// in security policy.
+type InputContainerConfig struct {
+	ImageName     string               `json:"containerImage" toml:"containerImage"`
+	Command       []string             `json:"command" toml:"command"`
+	EnvRules      []InputEnvRuleConfig `json:"environmentVariables" toml:"environmentVariables"`
+	WorkingDir    string               `json:"workingDir" toml:"workingDir"`
+	Mounts        []InputMountConfig   `json:"mounts" toml:"mount"`
+	AllowElevated bool                 `json:"allow_elevated" toml:"allow_elevated"`
+}
+
+// MountConfig contains toml or JSON config for mount security policy
+// constraint description.
+type InputMountConfig struct {
+	MountType string `json:"mountType" toml:"mountType"`
+	MountPath string `json:"mountPath" toml:"mountPath"`
+	Readonly  bool   `json:"readonly" toml:"readonly"`
+}
+
+// EnvRuleConfig contains toml or JSON config for environment variable
+// security policy enforcement.
+type InputEnvRuleConfig struct {
+	Strategy EnvVarRule `json:"strategy" toml:"strategy"`
+	Name     string     `json:"name" toml:"name"`
+	Value    string     `json:"value" toml:"value"`
+}
+
 // MountConfig contains toml or JSON config for mount security policy
 // constraint description.
 type MountConfig struct {

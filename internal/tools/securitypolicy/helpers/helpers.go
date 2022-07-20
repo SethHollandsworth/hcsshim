@@ -1,7 +1,9 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -67,12 +69,48 @@ func ParseEnvFromImage(img v1.Image) ([]string, error) {
 // DefaultContainerConfigs returns a hardcoded slice of container configs, which should
 // be included by default in the security policy.
 // The slice includes only a sandbox pause container.
-func DefaultContainerConfigs() []securitypolicy.ContainerConfig {
-	pause := securitypolicy.ContainerConfig{
-		ImageName: "k8s.gcr.io/pause:3.1",
-		Command:   []string{"/pause"},
+// TODO: take this out once we know the new version is what we want
+// func DefaultContainerConfigs() []securitypolicy.ContainerConfig {
+// 	pause := securitypolicy.ContainerConfig{
+// 		ImageName: "k8s.gcr.io/pause:3.1",
+// 		Command:   []string{"/pause"},
+// 	}
+// 	return []securitypolicy.ContainerConfig{pause}
+// }
+func DefaultContainerConfigs() ([]securitypolicy.ContainerConfig, error) {
+	// TODO: un-hardcode this
+	configFile := "./internal_config.json"
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return nil, err
 	}
-	return []securitypolicy.ContainerConfig{pause}
+
+	config := &ConfigContainers{}
+	err = json.Unmarshal(configData, config)
+	if err != nil {
+		return nil, err
+	}
+
+	// container format in config file is same as policy.json so we need to convert them into a usable format
+	outputContainerList, err := TranslateInputContainers(config.ExtraContainers)
+	if err != nil {
+		return nil, err
+	}
+	return outputContainerList, nil
+}
+
+// type for outermost config file
+type HcsShimConfig struct {
+	MinVersion string `json:"minVersion"`
+	MaxVersion string `json:"maxVersion"`
+}
+
+// type for the config file that's used as input for which version of hcsshim is needed,
+// which default containers are put into the group, etc.
+type ConfigContainers struct {
+	Version         string                                `json:"version"`
+	ExtraContainers []securitypolicy.InputContainerConfig `json:"extra_containers"`
+	HcsShimConfig   HcsShimConfig                         `json:"hcsshim_config"`
 }
 
 // ParseWorkingDirFromImage inspects the image spec and returns working directory if
@@ -100,6 +138,50 @@ func ParseCommandFromImage(img v1.Image) ([]string, error) {
 	cmdArgs := imgConfig.Config.Entrypoint
 	cmdArgs = append(cmdArgs, imgConfig.Config.Cmd...)
 	return cmdArgs, nil
+}
+
+// TranslateInputContainers standardizes the input format of the container policies to more closely show the
+// output format. For example, environment variables in the input policy are represented by a Name, Value, and Strategy
+// in the output they are a Strategy and Rule
+// TODO: add error checking
+func TranslateInputContainers(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.ContainerConfig, error) {
+	var policyContainers []securitypolicy.ContainerConfig
+	for _, inputContainerConfig := range containerConfigs {
+		// translate mounts
+		var mounts []securitypolicy.MountConfig
+		for _, mount := range inputContainerConfig.Mounts {
+			r := securitypolicy.MountConfig{
+				ContainerPath: mount.MountPath,
+				// TODO HostPath: ,
+				Readonly: mount.Readonly,
+			}
+			mounts = append(mounts, r)
+		}
+
+		// translate env vars
+		var rules []securitypolicy.EnvRuleConfig
+		for _, env := range inputContainerConfig.EnvRules {
+			r := securitypolicy.EnvRuleConfig{
+				Strategy: env.Strategy,
+				Rule:     env.Name + "=" + env.Value,
+			}
+			rules = append(rules, r)
+		}
+
+		containerConfig := securitypolicy.ContainerConfig{
+			ImageName: inputContainerConfig.ImageName,
+			Command:   inputContainerConfig.Command,
+
+			EnvRules:   rules,
+			WorkingDir: inputContainerConfig.WorkingDir,
+			// TODO: WaitMountPoints:WaitMountPoints ,
+			Mounts:        mounts,
+			AllowElevated: inputContainerConfig.AllowElevated,
+		}
+
+		policyContainers = append(policyContainers, containerConfig)
+	}
+	return policyContainers, nil
 }
 
 // PolicyContainersFromConfigs returns a slice of securitypolicy.Container generated
