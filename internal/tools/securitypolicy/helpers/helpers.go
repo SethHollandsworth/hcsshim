@@ -172,11 +172,11 @@ func TranslateInputContainers(containerConfigs []securitypolicy.InputContainerCo
 			ImageName: inputContainerConfig.ImageName,
 			Command:   inputContainerConfig.Command,
 
-			EnvRules:   rules,
-			WorkingDir: inputContainerConfig.WorkingDir,
-			// TODO: WaitMountPoints:WaitMountPoints ,
-			Mounts:        mounts,
-			AllowElevated: inputContainerConfig.AllowElevated,
+			EnvRules:        rules,
+			WorkingDir:      inputContainerConfig.WorkingDir,
+			WaitMountPoints: inputContainerConfig.WaitMountPoints,
+			Mounts:          mounts,
+			AllowElevated:   inputContainerConfig.AllowElevated,
 		}
 
 		policyContainers = append(policyContainers, containerConfig)

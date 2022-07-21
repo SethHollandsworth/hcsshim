@@ -63,12 +63,13 @@ type InputPolicyConfig struct {
 // ContainerConfig contains toml or JSON config for container described
 // in security policy.
 type InputContainerConfig struct {
-	ImageName     string               `json:"containerImage" toml:"containerImage"`
-	Command       []string             `json:"command" toml:"command"`
-	EnvRules      []InputEnvRuleConfig `json:"environmentVariables" toml:"environmentVariables"`
-	WorkingDir    string               `json:"workingDir" toml:"workingDir"`
-	Mounts        []InputMountConfig   `json:"mounts" toml:"mount"`
-	AllowElevated bool                 `json:"allow_elevated" toml:"allow_elevated"`
+	ImageName       string               `json:"containerImage" toml:"containerImage"`
+	Command         []string             `json:"command" toml:"command"`
+	EnvRules        []InputEnvRuleConfig `json:"environmentVariables" toml:"environmentVariables"`
+	WorkingDir      string               `json:"workingDir" toml:"workingDir"`
+	WaitMountPoints []string             `json:"wait_mount_points" toml:"wait_mount_points"`
+	Mounts          []InputMountConfig   `json:"mounts" toml:"mount"`
+	AllowElevated   bool                 `json:"allow_elevated" toml:"allow_elevated"`
 }
 
 // MountConfig contains toml or JSON config for mount security policy
