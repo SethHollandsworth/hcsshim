@@ -167,6 +167,7 @@ func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([
 	var configEnvVars []securitypolicy.InputEnvRuleConfig
 	configEnvVars = append(configEnvVars, config.OpenGCS.EnvVars...)
 	configEnvVars = append(configEnvVars, config.Fabric.EnvVars...)
+	configEnvVars = append(configEnvVars, config.ManagedIdentity.EnvVars...)
 	configEnvVars = append(configEnvVars, config.EnableRestart.EnvVars...)
 
 	// add the env vars to every input container
