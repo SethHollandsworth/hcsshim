@@ -91,8 +91,14 @@ func createPolicyFromConfig(config *securitypolicy.InputPolicyConfig) (*security
 		return nil, err
 	}
 
+	// add all the env vars from configuration file
+	addedEnvVars, err := helpers.AddConfigEnvVars(config.Containers)
+	if err != nil {
+		return nil, err
+	}
+
 	// need to translate the input from policy.json format to the expected json that gets base64 encoded
-	translatedInput, err := helpers.TranslateInputContainers(config.Containers)
+	translatedInput, err := helpers.TranslateInputContainers(addedEnvVars)
 	if err != nil {
 		return nil, err
 	}
@@ -102,6 +108,7 @@ func createPolicyFromConfig(config *securitypolicy.InputPolicyConfig) (*security
 		AllowAll:   config.AllowAll,
 	}
 
+	//
 	policyContainers, err := helpers.PolicyContainersFromConfigs(outConfig.Containers)
 	if err != nil {
 		return nil, err

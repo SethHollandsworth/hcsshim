@@ -85,7 +85,7 @@ func DefaultContainerConfigs() ([]securitypolicy.ContainerConfig, error) {
 		return nil, err
 	}
 
-	config := &ConfigContainers{}
+	config := &ConfigFile{}
 	err = json.Unmarshal(configData, config)
 	if err != nil {
 		return nil, err
@@ -105,12 +105,20 @@ type HcsShimConfig struct {
 	MaxVersion string `json:"maxVersion"`
 }
 
+type ConfigEnvVars struct {
+	EnvVars []securitypolicy.InputEnvRuleConfig `json:"environmentVariables"`
+}
+
 // type for the config file that's used as input for which version of hcsshim is needed,
 // which default containers are put into the group, etc.
-type ConfigContainers struct {
+type ConfigFile struct {
 	Version         string                                `json:"version"`
 	ExtraContainers []securitypolicy.InputContainerConfig `json:"extra_containers"`
 	HcsShimConfig   HcsShimConfig                         `json:"hcsshim_config"`
+	OpenGCS         ConfigEnvVars                         `json:"openGCS"`
+	Fabric          ConfigEnvVars                         `json:"fabric"`
+	ManagedIdentity ConfigEnvVars                         `json:"managedIdentity"`
+	EnableRestart   ConfigEnvVars                         `json:"enableRestart"`
 }
 
 // ParseWorkingDirFromImage inspects the image spec and returns working directory if
@@ -138,6 +146,35 @@ func ParseCommandFromImage(img v1.Image) ([]string, error) {
 	cmdArgs := imgConfig.Config.Entrypoint
 	cmdArgs = append(cmdArgs, imgConfig.Config.Cmd...)
 	return cmdArgs, nil
+}
+
+func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.InputContainerConfig, error) {
+	// TODO: un-hardcode this
+	configFile := "./internal_config.json"
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &ConfigFile{}
+	err = json.Unmarshal(configData, config)
+	if err != nil {
+		return nil, err
+	}
+
+	// TODO: could just append directly to list, would save a tiny amount of time
+	// take all of the config env vars and put them into one array
+	var configEnvVars []securitypolicy.InputEnvRuleConfig
+	configEnvVars = append(configEnvVars, config.OpenGCS.EnvVars...)
+	configEnvVars = append(configEnvVars, config.Fabric.EnvVars...)
+	configEnvVars = append(configEnvVars, config.EnableRestart.EnvVars...)
+
+	// add the env vars to every input container
+	for i := range containerConfigs {
+		containerConfigs[i].EnvRules = append(containerConfigs[i].EnvRules, configEnvVars...)
+	}
+	fmt.Printf("testing2 %+v\n", containerConfigs)
+	return containerConfigs, nil
 }
 
 // TranslateInputContainers standardizes the input format of the container policies to more closely show the
