@@ -53,18 +53,19 @@ func ComputeLayerHashes(img v1.Image) ([]string, error) {
 // ParseEnvFromImage inspects the image spec and adds security policy rules for
 // environment variables from the spec. Additionally, includes "TERM=xterm"
 // rule, which is added for linux containers by CRI.
-func ParseEnvFromImage(img v1.Image) ([]string, error) {
-	imgConfig, err := img.ConfigFile()
-	if err != nil {
-		return nil, err
-	}
+// func ParseEnvFromImage(img v1.Image) ([]string, error) {
+// 	imgConfig, err := img.ConfigFile()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// cri adds TERM=xterm for all workload containers. we add to all containers
-	// to prevent any possible error
-	envVars := append(imgConfig.Config.Env, "TERM=xterm")
+// 	// TODO: figure out what other env vars need to be in here
+// 	// cri adds TERM=xterm for all workload containers. we add to all containers
+// 	// to prevent any possible error
+// 	envVars := append(imgConfig.Config.Env, "TERM=xterm")
 
-	return envVars, nil
-}
+// 	return envVars, nil
+// }
 
 // DefaultContainerConfigs returns a hardcoded slice of container configs, which should
 // be included by default in the security policy.
@@ -119,6 +120,43 @@ type ConfigFile struct {
 	Fabric          ConfigEnvVars                         `json:"fabric"`
 	ManagedIdentity ConfigEnvVars                         `json:"managedIdentity"`
 	EnableRestart   ConfigEnvVars                         `json:"enableRestart"`
+	Mount           ConfigMount                           `json:"mount"`
+}
+
+type ConfigMount struct {
+	SourceTable                     []MountSource                     `json:"source_table"`
+	DefaultPolicy                   DefaultPolicy                     `json:"default_policy"`
+	DefaultMountsUser               []DefaultMountsUser               `json:"default_mounts_user"`
+	DefaultMountsGlobalInjectPolicy []DefaultMountsGlobalInjectPolicy `json:"default_mounts_global_inject_policy"`
+	Containerd                      Containerd                        `json:"containerd"`
+}
+
+type MountSource struct {
+	MountType string `json:"mountType"`
+	Source    string `json:"source"`
+}
+
+type DefaultPolicy struct {
+	Type    string                 `json:"type"`
+	Options map[string]interface{} `json:"options"`
+}
+
+type DefaultMountsUser struct {
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Path     string `json:"path"`
+	Readonly bool   `json:"readonly"`
+}
+
+type DefaultMountsGlobalInjectPolicy struct {
+	Destination string                 `json:"destination"`
+	Options     map[string]interface{} `json:"options"`
+	Source      string                 `json:"source"`
+	Type        string                 `json:"type"`
+}
+
+type Containerd struct {
+	DefaultWorkingDir string `json:"defaultWorkingDir"`
 }
 
 // ParseWorkingDirFromImage inspects the image spec and returns working directory if
@@ -149,7 +187,7 @@ func ParseCommandFromImage(img v1.Image) ([]string, error) {
 }
 
 func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.InputContainerConfig, error) {
-	// TODO: un-hardcode this
+	// TODO: un-hardcode this or make it static somewhere
 	configFile := "./internal_config.json"
 	configData, err := ioutil.ReadFile(configFile)
 	if err != nil {
@@ -174,7 +212,7 @@ func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([
 	for i := range containerConfigs {
 		containerConfigs[i].EnvRules = append(containerConfigs[i].EnvRules, configEnvVars...)
 	}
-	fmt.Printf("testing2 %+v\n", containerConfigs)
+
 	return containerConfigs, nil
 }
 
@@ -183,6 +221,18 @@ func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([
 // in the output they are a Strategy and Rule
 // TODO: add error checking
 func TranslateInputContainers(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.ContainerConfig, error) {
+	configFile := "./internal_config.json"
+	configData, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		return nil, err
+	}
+
+	config := &ConfigFile{}
+	err = json.Unmarshal(configData, config)
+	if err != nil {
+		return nil, err
+	}
+
 	var policyContainers []securitypolicy.ContainerConfig
 	for _, inputContainerConfig := range containerConfigs {
 		// translate mounts
@@ -257,12 +307,12 @@ func PolicyContainersFromConfigs(containerConfigs []securitypolicy.ContainerConf
 		}
 		// add rules for all known environment variables from the configuration
 		// these are in addition to "other rules" from the policy definition file
-		envVars, err := ParseEnvFromImage(img)
-		if err != nil {
-			return nil, err
-		}
-		envRules := securitypolicy.NewEnvVarRules(envVars)
-		envRules = append(envRules, containerConfig.EnvRules...)
+		// envVars, err := ParseEnvFromImage(img)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// envRules := securitypolicy.NewEnvVarRules(envVars)
+		// envRules = append(envRules, containerConfig.EnvRules...)
 
 		workingDir, err := ParseWorkingDirFromImage(img)
 		if err != nil {
@@ -276,7 +326,7 @@ func PolicyContainersFromConfigs(containerConfigs []securitypolicy.ContainerConf
 		container, err := securitypolicy.CreateContainerPolicy(
 			commandArgs,
 			layerHashes,
-			envRules,
+			containerConfig.EnvRules,
 			workingDir,
 			containerConfig.WaitMountPoints,
 			containerConfig.Mounts,
