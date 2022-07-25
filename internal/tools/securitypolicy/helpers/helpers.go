@@ -1,9 +1,7 @@
 package helpers
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -11,6 +9,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 
 	"github.com/Microsoft/hcsshim/ext4/tar2ext4"
+	"github.com/Microsoft/hcsshim/internal/tools/securitypolicy/config"
 	"github.com/Microsoft/hcsshim/pkg/securitypolicy"
 )
 
@@ -79,15 +78,7 @@ func ComputeLayerHashes(img v1.Image) ([]string, error) {
 // 	return []securitypolicy.ContainerConfig{pause}
 // }
 func DefaultContainerConfigs() ([]securitypolicy.ContainerConfig, error) {
-	// TODO: un-hardcode this
-	configFile := "./internal_config.json"
-	configData, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &ConfigFile{}
-	err = json.Unmarshal(configData, config)
+	config, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -187,15 +178,7 @@ func ParseCommandFromImage(img v1.Image) ([]string, error) {
 }
 
 func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.InputContainerConfig, error) {
-	// TODO: un-hardcode this or make it static somewhere
-	configFile := "./internal_config.json"
-	configData, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &ConfigFile{}
-	err = json.Unmarshal(configData, config)
+	config, err := config.GetConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -221,18 +204,6 @@ func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([
 // in the output they are a Strategy and Rule
 // TODO: add error checking
 func TranslateInputContainers(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.ContainerConfig, error) {
-	configFile := "./internal_config.json"
-	configData, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		return nil, err
-	}
-
-	config := &ConfigFile{}
-	err = json.Unmarshal(configData, config)
-	if err != nil {
-		return nil, err
-	}
-
 	var policyContainers []securitypolicy.ContainerConfig
 	for _, inputContainerConfig := range containerConfigs {
 		// translate mounts
