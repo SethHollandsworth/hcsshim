@@ -11,6 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 
+	importConfig "github.com/Microsoft/hcsshim/internal/tools/securitypolicy/config"
 	"github.com/Microsoft/hcsshim/internal/tools/securitypolicy/helpers"
 	"github.com/Microsoft/hcsshim/pkg/securitypolicy"
 )
@@ -33,7 +34,7 @@ func main() {
 			return err
 		}
 
-		config := &securitypolicy.InputPolicyConfig{}
+		config := &importConfig.InputPolicyConfig{}
 
 		// decide whether we're parsing toml or json
 		if strings.HasSuffix(*configFile, ".toml") {
@@ -47,6 +48,7 @@ func main() {
 				return err
 			}
 		}
+		fmt.Printf("configData %+v\n", config)
 		// TODO: do a lot of error checking on the input json to make sure it has all the necessary pieces.
 		// make it so it reports all the issues at one time instead of stopping after it finds one issue
 
@@ -83,13 +85,7 @@ func main() {
 	}
 }
 
-func createPolicyFromConfig(config *securitypolicy.InputPolicyConfig) (*securitypolicy.SecurityPolicy, error) {
-	// Add default containers to the policy config to get the root hash
-	// and any environment variable rules we might need
-	defaultContainers, err := helpers.DefaultContainerConfigs()
-	if err != nil {
-		return nil, err
-	}
+func createPolicyFromConfig(config *importConfig.InputPolicyConfig) (*securitypolicy.SecurityPolicy, error) {
 
 	// add all the env vars from configuration file
 	addedEnvVars, err := helpers.AddConfigEnvVars(config.Containers)
@@ -99,6 +95,13 @@ func createPolicyFromConfig(config *securitypolicy.InputPolicyConfig) (*security
 
 	// need to translate the input from policy.json format to the expected json that gets base64 encoded
 	translatedInput, err := helpers.TranslateInputContainers(addedEnvVars)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add default containers to the policy config to get the root hash
+	// and any environment variable rules we might need
+	defaultContainers, err := helpers.DefaultContainerConfigs()
 	if err != nil {
 		return nil, err
 	}

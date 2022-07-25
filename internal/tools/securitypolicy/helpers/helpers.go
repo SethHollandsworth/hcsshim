@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -9,7 +10,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 
 	"github.com/Microsoft/hcsshim/ext4/tar2ext4"
-	"github.com/Microsoft/hcsshim/internal/tools/securitypolicy/config"
+	importConfig "github.com/Microsoft/hcsshim/internal/tools/securitypolicy/config"
 	"github.com/Microsoft/hcsshim/pkg/securitypolicy"
 )
 
@@ -78,7 +79,7 @@ func ComputeLayerHashes(img v1.Image) ([]string, error) {
 // 	return []securitypolicy.ContainerConfig{pause}
 // }
 func DefaultContainerConfigs() ([]securitypolicy.ContainerConfig, error) {
-	config, err := config.GetConfig()
+	config, err := importConfig.GetConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -98,20 +99,20 @@ type HcsShimConfig struct {
 }
 
 type ConfigEnvVars struct {
-	EnvVars []securitypolicy.InputEnvRuleConfig `json:"environmentVariables"`
+	EnvVars []importConfig.InputEnvRuleConfig `json:"environmentVariables"`
 }
 
 // type for the config file that's used as input for which version of hcsshim is needed,
 // which default containers are put into the group, etc.
 type ConfigFile struct {
-	Version         string                                `json:"version"`
-	ExtraContainers []securitypolicy.InputContainerConfig `json:"extra_containers"`
-	HcsShimConfig   HcsShimConfig                         `json:"hcsshim_config"`
-	OpenGCS         ConfigEnvVars                         `json:"openGCS"`
-	Fabric          ConfigEnvVars                         `json:"fabric"`
-	ManagedIdentity ConfigEnvVars                         `json:"managedIdentity"`
-	EnableRestart   ConfigEnvVars                         `json:"enableRestart"`
-	Mount           ConfigMount                           `json:"mount"`
+	Version         string                              `json:"version"`
+	ExtraContainers []importConfig.InputContainerConfig `json:"extra_containers"`
+	HcsShimConfig   HcsShimConfig                       `json:"hcsshim_config"`
+	OpenGCS         ConfigEnvVars                       `json:"openGCS"`
+	Fabric          ConfigEnvVars                       `json:"fabric"`
+	ManagedIdentity ConfigEnvVars                       `json:"managedIdentity"`
+	EnableRestart   ConfigEnvVars                       `json:"enableRestart"`
+	Mount           ConfigMount                         `json:"mount"`
 }
 
 type ConfigMount struct {
@@ -128,8 +129,8 @@ type MountSource struct {
 }
 
 type DefaultPolicy struct {
-	Type    string                 `json:"type"`
-	Options map[string]interface{} `json:"options"`
+	Type    string                      `json:"type"`
+	Options importConfig.StringArrayMap `json:"options"`
 }
 
 type DefaultMountsUser struct {
@@ -140,10 +141,10 @@ type DefaultMountsUser struct {
 }
 
 type DefaultMountsGlobalInjectPolicy struct {
-	Destination string                 `json:"destination"`
-	Options     map[string]interface{} `json:"options"`
-	Source      string                 `json:"source"`
-	Type        string                 `json:"type"`
+	Destination string                      `json:"destination"`
+	Options     importConfig.StringArrayMap `json:"options"`
+	Source      string                      `json:"source"`
+	Type        string                      `json:"type"`
 }
 
 type Containerd struct {
@@ -177,15 +178,15 @@ func ParseCommandFromImage(img v1.Image) ([]string, error) {
 	return cmdArgs, nil
 }
 
-func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.InputContainerConfig, error) {
-	config, err := config.GetConfig()
+func AddConfigEnvVars(containerConfigs []importConfig.InputContainerConfig) ([]importConfig.InputContainerConfig, error) {
+	config, err := importConfig.GetConfig()
 	if err != nil {
 		return nil, err
 	}
 
 	// TODO: could just append directly to list, would save a tiny amount of time
 	// take all of the config env vars and put them into one array
-	var configEnvVars []securitypolicy.InputEnvRuleConfig
+	var configEnvVars []importConfig.InputEnvRuleConfig
 	configEnvVars = append(configEnvVars, config.OpenGCS.EnvVars...)
 	configEnvVars = append(configEnvVars, config.Fabric.EnvVars...)
 	configEnvVars = append(configEnvVars, config.ManagedIdentity.EnvVars...)
@@ -199,20 +200,57 @@ func AddConfigEnvVars(containerConfigs []securitypolicy.InputContainerConfig) ([
 	return containerConfigs, nil
 }
 
+func AddConfigMounts(containerConfig *securitypolicy.Container) (*securitypolicy.Container, error) {
+	config, err := importConfig.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// add the mounts to every input container
+	maxKeys := containerConfig.Mounts.Length
+	for _, mount := range config.Mount.DefaultMountsGlobalInjectPolicy {
+		// TODO: figure out key value based on what keys are already there
+		containerConfig.Mounts.Elements[strconv.Itoa(maxKeys)] = securitypolicy.Mount{
+			Destination: mount.Destination,
+			Source:      mount.Source,
+			Type:        mount.Type,
+			Options:     securitypolicy.Options(securitypolicy.StringArrayMap{mount.Options.Length, mount.Options.Elements}),
+		}
+		maxKeys++
+	}
+	containerConfig.Mounts.Length = maxKeys
+
+	return containerConfig, nil
+}
+
 // TranslateInputContainers standardizes the input format of the container policies to more closely show the
 // output format. For example, environment variables in the input policy are represented by a Name, Value, and Strategy
 // in the output they are a Strategy and Rule
 // TODO: add error checking
-func TranslateInputContainers(containerConfigs []securitypolicy.InputContainerConfig) ([]securitypolicy.ContainerConfig, error) {
+func TranslateInputContainers(containerConfigs []importConfig.InputContainerConfig) ([]securitypolicy.ContainerConfig, error) {
+	config, err := importConfig.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	sourceTable := config.Mount.SourceTable
 	var policyContainers []securitypolicy.ContainerConfig
 	for _, inputContainerConfig := range containerConfigs {
 		// translate mounts
 		var mounts []securitypolicy.MountConfig
 		for _, mount := range inputContainerConfig.Mounts {
+			var hostPath string
+			// find the source in the source table
+			for _, source := range sourceTable {
+				if source.MountType == mount.MountType {
+					hostPath = source.Source
+					break
+				}
+			}
 			r := securitypolicy.MountConfig{
 				ContainerPath: mount.MountPath,
-				// TODO HostPath: ,
-				Readonly: mount.Readonly,
+				HostPath:      hostPath,
+				Readonly:      mount.Readonly,
 			}
 			mounts = append(mounts, r)
 		}
@@ -220,8 +258,9 @@ func TranslateInputContainers(containerConfigs []securitypolicy.InputContainerCo
 		// translate env vars
 		var rules []securitypolicy.EnvRuleConfig
 		for _, env := range inputContainerConfig.EnvRules {
+
 			r := securitypolicy.EnvRuleConfig{
-				Strategy: env.Strategy,
+				Strategy: securitypolicy.EnvVarRule(env.Strategy),
 				Rule:     env.Name + "=" + env.Value,
 			}
 			rules = append(rules, r)
@@ -306,7 +345,11 @@ func PolicyContainersFromConfigs(containerConfigs []securitypolicy.ContainerConf
 		if err != nil {
 			return nil, err
 		}
-		policyContainers = append(policyContainers, container)
+		containerWithMounts, err := AddConfigMounts(container)
+		if err != nil {
+			return nil, err
+		}
+		policyContainers = append(policyContainers, containerWithMounts)
 	}
 
 	return policyContainers, nil

@@ -1,10 +1,8 @@
-package config
+package importConfig
 
 import (
 	"encoding/json"
 	"io/ioutil"
-
-	"github.com/Microsoft/hcsshim/pkg/securitypolicy"
 )
 
 // type for outermost config file
@@ -13,8 +11,20 @@ type HcsShimConfig struct {
 	MaxVersion string `json:"maxVersion"`
 }
 
+// EnvRuleConfig contains toml or JSON config for environment variable
+// security policy enforcement.
+type InputEnvRuleConfig struct {
+	Strategy EnvVarRule `json:"strategy" toml:"strategy"`
+	Name     string     `json:"name" toml:"name"`
+	Value    string     `json:"value" toml:"value"`
+}
+
 type ConfigEnvVars struct {
-	EnvVars []securitypolicy.InputEnvRuleConfig `json:"environmentVariables"`
+	EnvVars []InputEnvRuleConfig `json:"environmentVariables"`
+}
+type StringArrayMap struct {
+	Elements map[string]string `json:"elements"`
+	Length   int               `json:"length"`
 }
 
 type ConfigMount struct {
@@ -31,8 +41,8 @@ type MountSource struct {
 }
 
 type DefaultPolicy struct {
-	Type    string                 `json:"type"`
-	Options map[string]interface{} `json:"options"`
+	Type    string         `json:"type"`
+	Options StringArrayMap `json:"options"`
 }
 
 type DefaultMountsUser struct {
@@ -43,10 +53,10 @@ type DefaultMountsUser struct {
 }
 
 type DefaultMountsGlobalInjectPolicy struct {
-	Destination string                 `json:"destination"`
-	Options     map[string]interface{} `json:"options"`
-	Source      string                 `json:"source"`
-	Type        string                 `json:"type"`
+	Destination string         `json:"destination"`
+	Options     StringArrayMap `json:"options"`
+	Source      string         `json:"source"`
+	Type        string         `json:"type"`
 }
 
 type Containerd struct {
@@ -56,16 +66,45 @@ type Containerd struct {
 // type for the config file that's used as input for which version of hcsshim is needed,
 // which default containers are put into the group, etc.
 type ConfigFile struct {
-	Version         string                                `json:"version"`
-	ExtraContainers []securitypolicy.InputContainerConfig `json:"extra_containers"`
-	HcsShimConfig   HcsShimConfig                         `json:"hcsshim_config"`
-	OpenGCS         ConfigEnvVars                         `json:"openGCS"`
-	Fabric          ConfigEnvVars                         `json:"fabric"`
-	ManagedIdentity ConfigEnvVars                         `json:"managedIdentity"`
-	EnableRestart   ConfigEnvVars                         `json:"enableRestart"`
-	Mount           ConfigMount                           `json:"mount"`
+	Version         string                 `json:"version"`
+	ExtraContainers []InputContainerConfig `json:"extra_containers"`
+	HcsShimConfig   HcsShimConfig          `json:"hcsshim_config"`
+	OpenGCS         ConfigEnvVars          `json:"openGCS"`
+	Fabric          ConfigEnvVars          `json:"fabric"`
+	ManagedIdentity ConfigEnvVars          `json:"managedIdentity"`
+	EnableRestart   ConfigEnvVars          `json:"enableRestart"`
+	Mount           ConfigMount            `json:"mount"`
 }
 
+// ContainerConfig contains toml or JSON config for container described
+// in security policy.
+type InputContainerConfig struct {
+	ImageName       string               `json:"containerImage" toml:"containerImage"`
+	Command         []string             `json:"command" toml:"command"`
+	EnvRules        []InputEnvRuleConfig `json:"environmentVariables" toml:"environmentVariables"`
+	WorkingDir      string               `json:"workingDir" toml:"workingDir"`
+	WaitMountPoints []string             `json:"wait_mount_points" toml:"wait_mount_points"`
+	Mounts          []InputMountConfig   `json:"mounts" toml:"mount"`
+	AllowElevated   bool                 `json:"allow_elevated" toml:"allow_elevated"`
+}
+
+// MountConfig contains toml or JSON config for mount security policy
+// constraint description.
+type InputMountConfig struct {
+	MountType string `json:"mountType" toml:"mountType"`
+	MountPath string `json:"mountPath" toml:"mountPath"`
+	Readonly  bool   `json:"readonly" toml:"readonly"`
+}
+
+// PolicyConfig contains toml or JSON config for security policy.
+type InputPolicyConfig struct {
+	AllowAll   bool                   `json:"allow_all" toml:"allow_all"`
+	Containers []InputContainerConfig `json:"containers" toml:"container"`
+}
+
+type EnvVarRule string
+
+// GetConfig grabs the initial config from the config file and returns it as an object
 func GetConfig() (*ConfigFile, error) {
 	configFile := "./internal_config.json"
 	configData, err := ioutil.ReadFile(configFile)
