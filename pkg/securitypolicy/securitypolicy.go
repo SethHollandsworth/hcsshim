@@ -353,7 +353,7 @@ func newOptionsFromConfig(mCfg *MountConfig) []string {
 // newMountTypeFromConfig mimics the behavior in CRI when figuring out OCI
 // mount type.
 func newMountTypeFromConfig(mCfg *MountConfig) string {
-	// fmt.Printf("newMountTypeFromConfig: %+v\n", mCfg)
+
 	// TODO: figure out logic for mount types
 	config, err := importConfig.GetConfig()
 	if err != nil {
@@ -387,6 +387,7 @@ func newMountConstraints(mountConfigs []MountConfig) Mounts {
 	}
 	return Mounts{
 		Elements: mounts,
+		Length:   len(mounts),
 	}
 }
 
