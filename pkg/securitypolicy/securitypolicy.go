@@ -292,6 +292,7 @@ func newEnvRules(rs []EnvRuleConfig) EnvRules {
 	}
 	return EnvRules{
 		Elements: envRules,
+		Length:   len(envRules),
 	}
 }
 
@@ -302,6 +303,7 @@ func newLayers(ls []string) Layers {
 	}
 	return Layers{
 		Elements: layers,
+		Length:   len(layers),
 	}
 }
 
@@ -312,6 +314,7 @@ func newWaitMountPoints(em []string) WaitMountPoints {
 	}
 	return WaitMountPoints{
 		Elements: mounts,
+		Length:   len(mounts),
 	}
 }
 
@@ -322,6 +325,7 @@ func newMountOptions(opts []string) Options {
 	}
 	return Options{
 		Elements: mountOpts,
+		Length:   len(mountOpts),
 	}
 }
 

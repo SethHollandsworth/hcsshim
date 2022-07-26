@@ -106,8 +106,7 @@ type EnvVarRule string
 
 // GetConfig grabs the initial config from the config file and returns it as an object
 func GetConfig() (*ConfigFile, error) {
-	configFile := "./internal_config.json"
-	configData, err := ioutil.ReadFile(configFile)
+	configData, err := ioutil.ReadFile("./internal_config.json")
 	if err != nil {
 		return nil, err
 	}

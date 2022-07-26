@@ -50,34 +50,7 @@ func ComputeLayerHashes(img v1.Image) ([]string, error) {
 	return layerHashes, nil
 }
 
-// ParseEnvFromImage inspects the image spec and adds security policy rules for
-// environment variables from the spec. Additionally, includes "TERM=xterm"
-// rule, which is added for linux containers by CRI.
-// func ParseEnvFromImage(img v1.Image) ([]string, error) {
-// 	imgConfig, err := img.ConfigFile()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// TODO: figure out what other env vars need to be in here
-// 	// cri adds TERM=xterm for all workload containers. we add to all containers
-// 	// to prevent any possible error
-// 	envVars := append(imgConfig.Config.Env, "TERM=xterm")
-
-// 	return envVars, nil
-// }
-
-// DefaultContainerConfigs returns a hardcoded slice of container configs, which should
-// be included by default in the security policy.
-// The slice includes only a sandbox pause container.
-// TODO: take this out once we know the new version is what we want
-// func DefaultContainerConfigs() []securitypolicy.ContainerConfig {
-// 	pause := securitypolicy.ContainerConfig{
-// 		ImageName: "k8s.gcr.io/pause:3.1",
-// 		Command:   []string{"/pause"},
-// 	}
-// 	return []securitypolicy.ContainerConfig{pause}
-// }
+// get default sidecar containers for container group
 func DefaultContainerConfigs() ([]securitypolicy.ContainerConfig, error) {
 	config, err := importConfig.GetConfig()
 	if err != nil {
@@ -115,6 +88,7 @@ type ConfigFile struct {
 	Mount           ConfigMount                         `json:"mount"`
 }
 
+// heading in config file regarding mounts
 type ConfigMount struct {
 	SourceTable                     []MountSource                     `json:"source_table"`
 	DefaultPolicy                   DefaultPolicy                     `json:"default_policy"`
@@ -123,16 +97,19 @@ type ConfigMount struct {
 	Containerd                      Containerd                        `json:"containerd"`
 }
 
+// where the mounts are coming from in the config file
 type MountSource struct {
 	MountType string `json:"mountType"`
 	Source    string `json:"source"`
 }
 
+// default behavior of a mount if otherwise unspecified
 type DefaultPolicy struct {
 	Type    string                      `json:"type"`
 	Options importConfig.StringArrayMap `json:"options"`
 }
 
+// the default mounts for a user container
 type DefaultMountsUser struct {
 	Name     string `json:"name"`
 	Type     string `json:"type"`
@@ -140,6 +117,7 @@ type DefaultMountsUser struct {
 	Readonly bool   `json:"readonly"`
 }
 
+// the default mounts to be placed on all containers in the group
 type DefaultMountsGlobalInjectPolicy struct {
 	Destination string                      `json:"destination"`
 	Options     importConfig.StringArrayMap `json:"options"`
@@ -178,6 +156,7 @@ func ParseCommandFromImage(img v1.Image) ([]string, error) {
 	return cmdArgs, nil
 }
 
+// AddConfigEnvVars adds environment variables from the config into each container in the group.
 func AddConfigEnvVars(containerConfigs []importConfig.InputContainerConfig) ([]importConfig.InputContainerConfig, error) {
 	config, err := importConfig.GetConfig()
 	if err != nil {
@@ -200,6 +179,7 @@ func AddConfigEnvVars(containerConfigs []importConfig.InputContainerConfig) ([]i
 	return containerConfigs, nil
 }
 
+// AddConfigMounts adds mounts from the config into each container in the group.
 func AddConfigMounts(containerConfig *securitypolicy.Container) (*securitypolicy.Container, error) {
 	config, err := importConfig.GetConfig()
 	if err != nil {
@@ -209,12 +189,11 @@ func AddConfigMounts(containerConfig *securitypolicy.Container) (*securitypolicy
 	// add the mounts to every input container
 	maxKeys := containerConfig.Mounts.Length
 	for _, mount := range config.Mount.DefaultMountsGlobalInjectPolicy {
-		// TODO: figure out key value based on what keys are already there
 		containerConfig.Mounts.Elements[strconv.Itoa(maxKeys)] = securitypolicy.Mount{
 			Destination: mount.Destination,
 			Source:      mount.Source,
 			Type:        mount.Type,
-			Options:     securitypolicy.Options(securitypolicy.StringArrayMap{mount.Options.Length, mount.Options.Elements}),
+			Options:     securitypolicy.Options(securitypolicy.StringArrayMap{Length: mount.Options.Length, Elements: mount.Options.Elements}),
 		}
 		maxKeys++
 	}
