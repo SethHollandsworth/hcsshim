@@ -1,0 +1,769 @@
+{
+    "version": "0.1.2",
+    "extra_containers": [
+        {
+            "containerImage": "k8s.gcr.io/pause:3.1",
+            "command": [
+                "/pause"
+            ],
+            "environmentVariables": [
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_API_VERSION",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_HEADER",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_SERVER_THUMBPRINT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "HOSTNAME",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "PATH",
+                    "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                },
+                {
+                    "strategy": "string",
+                    "name": "TERM",
+                    "value": "xterm"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "((?i)FABRIC)_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "T(E)?MP",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "FabricPackageFileName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "HostedServiceName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "azurecontainerinstance_restarted_by",
+                    "value": ".+"
+                }
+            ],
+            "workingDir": "",
+            "wait_mount_points": null,
+            "mounts": [
+                {
+                    "mountType": "resolvconf",
+                    "mountPath": "/etc/resolv.conf",
+                    "readonly": false
+                }
+            ],
+            "allow_elevated": false
+        },
+        {
+            "containerImage": "mcr.microsoft.com/aci/msi-atlas-adapter:master_20201203.1",
+            "command": [
+                "/bin/sh",
+                "-c",
+                "until ./msiAtlasAdapter; do echo $? restarting; done"
+            ],
+            "environmentVariables": [
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_API_VERSION",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_HEADER",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_SERVER_THUMBPRINT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "ACI_MI_CLIENT_ID_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "ACI_MI_RES_ID_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "HOSTNAME",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "TERM",
+                    "value": "xterm"
+                },
+                {
+                    "strategy": "string",
+                    "name": "PATH",
+                    "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "((?i)FABRIC)_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_Id+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ApplicationName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_CodePackageName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceDnsName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "ACI_MI_DEFAULT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "TokenProxyIpAddressEnvKeyName",
+                    "value": "[ContainerToHostAddress|Fabric_NodelPOrFQDN]"
+                },
+                {
+                    "strategy": "string",
+                    "name": "ContainerToHostAddress",
+                    "value": "169.254.128.1"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_NodelPOrFQDN",
+                    "value": "[\\d]{1,3}.[\\d]{1,3}.[\\d]{1.3}.[\\d]{1,3}"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_NetworkingMode",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "azurecontainerinstance_restarted_by",
+                    "value": ".+"
+                }
+            ],
+            "workingDir": "",
+            "wait_mount_points": null,
+            "mounts": null,
+            "allow_elevated": false
+        },
+        {
+            "containerImage": "mcr.microsoft.com/aci/atlas-mount-azure-file-volume:master_20201210.2",
+            "command": [
+                "/mount_azure_file.sh"
+            ],
+            "environmentVariables": [
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_API_VERSION",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_HEADER",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_SERVER_THUMBPRINT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "HOSTNAME",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "TERM",
+                    "value": "xterm"
+                },
+                {
+                    "strategy": "string",
+                    "name": "PATH",
+                    "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "((?i)FABRIC)_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_Id",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceDnsName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ApplicationName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_CodePackageName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "AZURE_STORAGE_ACCOUNT_NAME+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "AZURE_STORAGE_ACCOUNT_DNS_NAME",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "AZURE_STORAGE_ACCOUNT_KEY",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "AZURE_FILE_ENDPOINT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "MOUNT_POINT",
+                    "value": "/mount/azurefile/mnt"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "MOUNT_DIR_MODE",
+                    "value": "[\\d]{4}"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "MOUNT_FILE_MODE",
+                    "value": "[\\d]{4}"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "MOUNT_PROTOCOL",
+                    "value": "(smb|nfs)"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "MOUNT_ACCESS_MODE",
+                    "value": "[rw|ro]"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "azurecontainerinstance_restarted_by",
+                    "value": ".+"
+                }
+            ],
+            "workingDir": "",
+            "wait_mount_points": null,
+            "mounts": [
+                {
+                    "mountType": "azureFile",
+                    "mountPath": "/mount/azurefile",
+                    "readonly": false
+                },
+                {
+                    "mountType": "resolvconf",
+                    "mountPath": "/etc/resolv.conf",
+                    "readonly": false
+                }
+            ],
+            "allow_elevated": false
+        },
+        {
+            "containerImage": "mcr.microsoft.com/aci/atlas-mount-secrets-volume:master_20210406.3",
+            "command": [
+                "/bin/bash",
+                "/mount_secrets.sh"
+            ],
+            "environmentVariables": [
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_API_VERSION",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_HEADER",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_SERVER_THUMBPRINT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "HOSTNAME",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "TERM",
+                    "value": "xterm"
+                },
+                {
+                    "strategy": "string",
+                    "name": "PATH",
+                    "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "((?i)FABRIC)_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_Id",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ApplicationName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_CodePackageName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceDnsName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "SECRETS_COUNT",
+                    "value": "[\\d]{1,2}"
+                },
+                {
+                    "strategy": "string",
+                    "name": "SECRETS_PATH",
+                    "value": "/mount/secretssource"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "SECRET_.",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "MOUNT_POINT",
+                    "value": "/mount/secrets/mnt"
+                },
+                {
+                    "strategy": "string",
+                    "name": "Fabric_SettingPath",
+                    "value": "/mount/secretssource"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "azurecontainerinstance_restarted_by",
+                    "value": ".+"
+                }
+            ],
+            "workingDir": "",
+            "wait_mount_points": null,
+            "mounts": [
+                {
+                    "mountType": "secret",
+                    "mountPath": "/mount/secrets",
+                    "readonly": false
+                },
+                {
+                    "mountType": "secretsSource",
+                    "mountPath": "/mount/secretssource",
+                    "readonly": true
+                },
+                {
+                    "mountType": "resolvconf",
+                    "mountPath": "/etc/resolv.conf",
+                    "readonly": false
+                }
+            ],
+            "allow_elevated": false
+        },
+        {
+            "containerImage": "mcr.microsoft.com/aci/atlas-netstats:master_20210330.2",
+            "command": [
+                "tail",
+                "-f",
+                "/dev/null"
+            ],
+            "environmentVariables": [
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_API_VERSION",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_HEADER",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_SERVER_THUMBPRINT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "HOSTNAME",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "TERM",
+                    "value": "xterm"
+                },
+                {
+                    "strategy": "string",
+                    "name": "PATH",
+                    "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "((?i)FABRIC)_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_Id",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ApplicationName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_CodePackageName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceDnsName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "PORT",
+                    "value": "9999"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "azurecontainerinstance_restarted_by",
+                    "value": ".+"
+                }
+            ],
+            "workingDir": "",
+            "wait_mount_points": null,
+            "mounts": null,
+            "allow_elevated": false
+        },
+        {
+            "containerImage": "mcr.microsoft.com/aci/atlas-mount-resolv-conf:master_20210902.2",
+            "command": [
+                "bash",
+                "/copy_resolv_conf.sh"
+            ],
+            "environmentVariables": [
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_API_VERSION",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_HEADER",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "IDENTITY_SERVER_THUMBPRINT",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "HOSTNAME",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "TERM",
+                    "value": "xterm"
+                },
+                {
+                    "strategy": "string",
+                    "name": "PATH",
+                    "value": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "((?i)FABRIC)_.+",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_Id",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ApplicationName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_CodePackageName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "Fabric_ServiceDnsName",
+                    "value": ".+"
+                },
+                {
+                    "strategy": "string",
+                    "name": "SOURCE_RESOLV_CONF_LOCATION",
+                    "value": "/etc/resolv.conf"
+                },
+                {
+                    "strategy": "string",
+                    "name": "DESTINATION_RESOLV_CONF_LOCATION",
+                    "value": "/mount/resolvconf/resolv.conf"
+                },
+                {
+                    "strategy": "re2",
+                    "name": "azurecontainerinstance_restarted_by",
+                    "value": ".+"
+                }
+            ],
+            "workingDir": "",
+            "wait_mount_points": null,
+            "mounts": [
+                {
+                    "mountType": "resolvconf",
+                    "mountPath": "/mount/resolvconf",
+                    "readonly": false
+                }
+            ],
+            "allow_elevated": false
+        }
+    ],
+    "hcsshim_config": {
+        "minVersion": "0.0.1",
+        "maxVersion": "1.0.0"
+    },
+    "openGCS": {
+        "environmentVariables": [
+            {
+                "strategy": "string",
+                "name": "TERM",
+                "value": "xterm"
+            }
+        ]
+    },
+    "fabric": {
+        "environmentVariables": [
+            {
+                "strategy": "re2",
+                "name": "((?i)FABRIC)_.+",
+                "value": ".+"
+            },
+            {
+                "strategy": "re2",
+                "name": "HOSTNAME",
+                "value": ".+"
+            },
+            {
+                "strategy": "re2",
+                "name": "T(E)?MP",
+                "value": ".+"
+            },
+            {
+                "strategy": "re2",
+                "name": "FabricPackageFileName",
+                "value": ".+"
+            },
+            {
+                "strategy": "re2",
+                "name": "HostedServiceName",
+                "value": ".+"
+            }
+        ]
+    },
+    "managedIdentity": {
+        "environmentVariables": [
+            {
+                "strategy": "re2",
+                "name": "IDENTITY_API_VERSION",
+                "value": ".+"
+            },
+            {
+                "strategy": "re2",
+                "name": "IDENTITY_HEADER",
+                "value": ".+"
+            },
+            {
+                "strategy": "re2",
+                "name": "IDENTITY_SERVER_THUMBPRINT",
+                "value": ".+"
+            }
+        ]
+    },
+    "enableRestart": {
+        "environmentVariables": [
+            {
+                "strategy": "re2",
+                "name": "azurecontainerinstance_restarted_by",
+                "value": ".+"
+            }
+        ]
+    },
+    "mount": {
+        "source_table": [
+            {
+                "mountType": "azureFile",
+                "source": "sandbox:///tmp/atlas/azureFileVolume/.+"
+            },
+            {
+                "mountType": "secret",
+                "source": "sandbox:///tmp/atlas/secretsVolume/.+"
+            },
+            {
+                "mountType": "secretsSource",
+                "source": "/run/gcs/c/.+"
+            },
+            {
+                "mountType": "emptyDir",
+                "source": "sandbox:///tmp/atlas/emptydir/.+"
+            },
+            {
+                "mountType": "resolvconf",
+                "source": "sandbox:///tmp/atlas/resolvconf/.+"
+            }
+        ],
+        "default_policy": {
+            "type": "bind",
+            "options": {
+                "elements": {
+                    "0": "rbind",
+                    "1": "rshared",
+                    "2": "rw"
+                },
+                "length": 3
+            }
+        },
+        "default_mounts_user": [
+            {
+                "name": "dns_resolve",
+                "type": "resolvconf",
+                "path": "/etc/resolv.conf",
+                "readonly": false
+            }
+        ],
+        "default_mounts_global_inject_policy": [
+            {
+                "destination": "/sys",
+                "options": {
+                    "elements": {
+                        "0": "nosuid",
+                        "1": "noexec",
+                        "2": "nodev",
+                        "3": "rw"
+                    },
+                    "length": 4
+                },
+                "source": "sysfs",
+                "type": "sysfs"
+            },
+            {
+                "destination": "/sys/fs/cgroup",
+                "options": {
+                    "elements": {
+                        "0": "nosuid",
+                        "1": "noexec",
+                        "2": "nodev",
+                        "3": "relatime",
+                        "4": "rw"
+                    },
+                    "length": 5
+                },
+                "source": "cgroup",
+                "type": "cgroup"
+            }
+        ],
+        "containerd": {
+            "defaultWorkingDir": ""
+        }
+    }
+}

@@ -3,6 +3,8 @@ package importConfig
 import (
 	"encoding/json"
 	"io/ioutil"
+	"runtime"
+	"strings"
 )
 
 // type for outermost config file
@@ -85,7 +87,15 @@ type InputContainerConfig struct {
 	WorkingDir      string               `json:"workingDir" toml:"workingDir"`
 	WaitMountPoints []string             `json:"wait_mount_points" toml:"wait_mount_points"`
 	Mounts          []InputMountConfig   `json:"mounts" toml:"mount"`
+	Auth            InputAuthConfig      `json:"auth" toml:"auth"`
 	AllowElevated   bool                 `json:"allow_elevated" toml:"allow_elevated"`
+}
+
+// InputAuthConfig contains config for container authentication
+type InputAuthConfig struct {
+	Username string `json:"username" toml:"username"`
+	Password string `json:"password" toml:"password"`
+	Token    string `json:"token" toml:"token"`
 }
 
 // MountConfig contains toml or JSON config for mount security policy
@@ -106,7 +116,10 @@ type EnvVarRule string
 
 // GetConfig grabs the initial config from the config file and returns it as an object
 func GetConfig() (*ConfigFile, error) {
-	configData, err := ioutil.ReadFile("./internal_config.json")
+	_, filename, _, _ := runtime.Caller(0)
+	// extract the absolute path of the config file
+	configFilePath := filename[:strings.LastIndex(filename, "/")] + "/config.json"
+	configData, err := ioutil.ReadFile(configFilePath)
 	if err != nil {
 		return nil, err
 	}

@@ -64,7 +64,7 @@ func TestDefaultContainerConfigs(t *testing.T) {
 	if err != nil {
 		t.Errorf("unable to get default container configs: %v", err)
 	}
-	if len(configs) != 1 {
+	if len(configs) != 6 {
 		t.Errorf("expected 1 config, got %d", len(configs))
 	}
 }

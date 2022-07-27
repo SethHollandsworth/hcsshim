@@ -202,6 +202,27 @@ func AddConfigMounts(containerConfig *securitypolicy.Container) (*securitypolicy
 	return containerConfig, nil
 }
 
+// AddConfigMounts adds mounts from the config into each user container in the group.
+func AddConfigUserMounts(containerConfigs []importConfig.InputContainerConfig) ([]importConfig.InputContainerConfig, error) {
+	config, err := importConfig.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	// add the mounts to every input container
+	for i := range containerConfigs {
+		for _, mount := range config.Mount.DefaultMountsUser {
+			containerConfigs[i].Mounts = append(containerConfigs[i].Mounts, importConfig.InputMountConfig{
+				MountType: mount.Type,
+				MountPath: mount.Path,
+				Readonly:  mount.Readonly,
+			})
+		}
+	}
+
+	return containerConfigs, nil
+}
+
 // TranslateInputContainers standardizes the input format of the container policies to more closely show the
 // output format. For example, environment variables in the input policy are represented by a Name, Value, and Strategy
 // in the output they are a Strategy and Rule
@@ -248,7 +269,11 @@ func TranslateInputContainers(containerConfigs []importConfig.InputContainerConf
 		containerConfig := securitypolicy.ContainerConfig{
 			ImageName: inputContainerConfig.ImageName,
 			Command:   inputContainerConfig.Command,
-
+			Auth: securitypolicy.AuthConfig{
+				Username: inputContainerConfig.Auth.Username,
+				Password: inputContainerConfig.Auth.Password,
+				Token:    inputContainerConfig.Auth.Token,
+			},
 			EnvRules:        rules,
 			WorkingDir:      inputContainerConfig.WorkingDir,
 			WaitMountPoints: inputContainerConfig.WaitMountPoints,
@@ -272,6 +297,13 @@ func PolicyContainersFromConfigs(containerConfigs []securitypolicy.ContainerConf
 			auth := authn.Basic{
 				Username: containerConfig.Auth.Username,
 				Password: containerConfig.Auth.Password}
+			c, _ := auth.Authorization()
+			authOption := remote.WithAuth(authn.FromConfig(*c))
+			imageOptions = append(imageOptions, authOption)
+		}
+
+		if containerConfig.Auth.Token != "" {
+			auth := authn.Bearer{Token: containerConfig.Auth.Token}
 			c, _ := auth.Authorization()
 			authOption := remote.WithAuth(authn.FromConfig(*c))
 			imageOptions = append(imageOptions, authOption)

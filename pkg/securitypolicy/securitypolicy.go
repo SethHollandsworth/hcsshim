@@ -33,6 +33,7 @@ type PolicyConfig struct {
 type AuthConfig struct {
 	Username string `json:"username" toml:"username"`
 	Password string `json:"password" toml:"password"`
+	Token    string `json:"token" toml:"token"`
 }
 
 // EnvRuleConfig contains toml or JSON config for environment variable

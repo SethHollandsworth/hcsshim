@@ -5,6 +5,7 @@ import (
 )
 
 func TestGetConfig(t *testing.T) {
+
 	actual, err := GetConfig()
 	if err != nil {
 		t.Errorf("GetConfig() failed with error: %v", err)
