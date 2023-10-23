@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -281,8 +282,9 @@ var rootHashVHDCommand = cli.Command{
 			return fmt.Errorf("failed to fetch image layers: %w", err)
 		}
 		log.Debugf("%d layers found", len(layers))
-
-		convertFunc := func(layer v1.Layer) (string, error) {
+		var waitGroup sync.WaitGroup
+		convertFunc := func(layer v1.Layer, results []string, layerNumber int) (string, error) {
+			defer waitGroup.Done()
 			rc, err := layer.Uncompressed()
 			if err != nil {
 				return "", err
@@ -293,8 +295,10 @@ var rootHashVHDCommand = cli.Command{
 			if err != nil {
 				return "", err
 			}
+			results[layerNumber] = hash
 			return hash, err
 		}
+		results := make([]string, len(layers))
 
 		for layerNumber, layer := range layers {
 			diffID, err := layer.DiffID()
@@ -305,11 +309,15 @@ var rootHashVHDCommand = cli.Command{
 				"layerNumber": layerNumber,
 				"layerDiff":   diffID.String(),
 			}).Debug("uncompressed layer")
-
-			hash, err := convertFunc(layer)
+			waitGroup.Add(1)
+			go convertFunc(layer, results, layerNumber)
 			if err != nil {
 				return fmt.Errorf("failed to compute root digest: %w", err)
 			}
+			// fmt.Fprintf(os.Stdout, "Layer %d root hash: %s\n", layerNumber, hash)
+		}
+		waitGroup.Wait()
+		for layerNumber, hash := range results {
 			fmt.Fprintf(os.Stdout, "Layer %d root hash: %s\n", layerNumber, hash)
 		}
 		return nil
